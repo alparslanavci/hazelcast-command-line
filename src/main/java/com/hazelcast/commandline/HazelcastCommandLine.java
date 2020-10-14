@@ -156,4 +156,10 @@ class HazelcastCommandLine
         }
     }
 
+    @Command(name = "--enableLudicrousMode", hidden = true)
+    public void ludicrousMode(){
+        LudicrousMode ludicrous = new LudicrousMode();
+        ludicrous.start();
+    }
+
 }
