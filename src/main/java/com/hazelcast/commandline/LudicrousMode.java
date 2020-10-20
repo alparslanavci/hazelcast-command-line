@@ -1,5 +1,9 @@
 package com.hazelcast.commandline;
 
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.map.IMap;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -13,6 +17,9 @@ public class LudicrousMode {
 
     public void start() {
         threadPool.execute(() -> {
+//            HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance();
+//            IMap<Integer, LudicrousPositions> ludicrousPositionsIMap = hazelcastInstance.getMap("ludicrous");
+
             int maxX;
             int maxY;
             try {
@@ -30,19 +37,21 @@ public class LudicrousMode {
 
             char[][] screen = new char[maxY][maxX];
 
-            int yPos = 0;
+            int xPos = 0;
             int linePos = 0;
             int speed = 5;
             do {
                 setClearScreen(screen);
 
-                printLines(screen, screen.length / 3, linePos);
-                printLines(screen, 2 * screen.length / 3, linePos);
+                printLines(screen, linePos, (screen.length - 5) / 3);
+                printLines(screen, linePos, 2 * (screen.length - 5) / 3);
                 linePos += speed;
 
-                printCar(screen, -3, yPos);
-                if (yPos <= screen[0].length / 2) {
-                    yPos += speed;
+                printCar(screen, xPos, (screen.length - 5) / 6 - 3);
+                printCar(screen, xPos, (screen.length - 5) / 2 - 3);
+                printCar(screen, xPos, 5 * (screen.length - 5) / 6 - 3);
+                if (xPos <= screen[0].length / 2) {
+                    xPos += speed;
                 }
 
                 printMessage(screen, message);
@@ -55,11 +64,11 @@ public class LudicrousMode {
 
         });
 
-        threadPool.execute(() -> {
-            message = "5 + 15 = ";
-            Scanner scanner = new Scanner(System.in);
-            message = scanner.nextLine();
-        });
+//        threadPool.execute(() -> {
+//            message = "5 + 15 = ";
+//            Scanner scanner = new Scanner(System.in);
+//            message = scanner.nextLine();
+//        });
     }
 
     private void sleep() {
@@ -70,21 +79,32 @@ public class LudicrousMode {
         }
     }
 
+//    private void printLines(char[][] screen, int xPos, int yPos) {
+//        int y = -yPos;
+//        String line = "==========          ";
+//        int lineLength = line.length();
+//        for (int i = 0; i < screen[0].length + yPos; i = i + lineLength) {
+//            int newY = y + i;
+//            if (newY + lineLength > 0) {
+//                printString(screen, line, xPos, newY);
+//            }
+//        }
+//    }
+
     private void printLines(char[][] screen, int xPos, int yPos) {
-        int y = -yPos;
+        int x = -xPos;
         String line = "==========          ";
         int lineLength = line.length();
-        for (int i = 0; i < screen[0].length + yPos; i = i + lineLength) {
-            int newY = y + i;
-            if (newY + lineLength > 0) {
-                printString(screen, line, xPos, newY);
+        for (int i = 0; i < screen[0].length + xPos; i = i + lineLength) {
+            int newX = x + i;
+            if (newX + lineLength > 0) {
+                printString(screen, line, newX, yPos);
             }
         }
     }
 
     private void printCar(char[][] screen, int xPos, int yPos) {
-        int x = screen.length / 2 + xPos;
-        int y = 5 + yPos;
+        int x = 5 + xPos;
         String car =
                           "  HHHH        HHHH\n"
                         + "HHHHHHHHHHHHHHHHHHHHH\n"
@@ -93,12 +113,12 @@ public class LudicrousMode {
                         + "HH                 HHHH\n"
                         + "HHHHHHHHHHHHHHHHHHHHH\n"
                         + "  HHHH        HHHH\n";
-        printString(screen, car, x, y);
+        printString(screen, car, x, yPos);
     }
 
     private void printMessage(char[][] screen, String message) {
-        int x = screen.length - 3;
-        int y = 5;
+        int y = screen.length - 3;
+        int x = 5;
         printString(screen, message, x, y);
     }
 
@@ -112,21 +132,21 @@ public class LudicrousMode {
                 b = 0;
                 continue;
             }
-            int newX = x + a;
-            int newY = y + b++;
-            if (newX > 0 && newX < screen.length && newY > 0 && newY < screen[0].length){
-                screen[newX][newY] = charAt;
+            int newY = y + a;
+            int newX = x + b++;
+            if (newY > 0 && newY < screen.length && newX > 0 && newX < screen[0].length){
+                screen[newY][newX] = charAt;
             }
         }
     }
 
     private void setClearScreen(char[][] screen) {
-        for (int x = 1; x < screen.length; x++) {
-            for (int y = 0; y < screen[x].length; y++) {
-                if (x == 1 || x == screen.length - 5 /*|| y == 0 || y == screen[x].length - 1*/) {
-                    screen[x][y] = '#';
+        for (int y = 1; y < screen.length; y++) {
+            for (int x = 0; x < screen[y].length; x++) {
+                if (y == 1 || y == screen.length - 5 /*|| x == 0 || x == screen[y].length - 1*/) {
+                    screen[y][x] = '#';
                 }else {
-                    screen[x][y] = 0;
+                    screen[y][x] = 0;
                 }
             }
         }
