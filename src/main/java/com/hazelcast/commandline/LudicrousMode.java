@@ -28,7 +28,7 @@ public class LudicrousMode {
         config.setClusterName("ludicrousMode");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).addMember("54.242.216.103").addMember("35.175.194.182").addMember("54.91.151.18");
+        join.getTcpIpConfig().setEnabled(true).addMember("172.30.0.56").addMember("172.30.0.244").addMember("172.30.0.31");
         hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         IMap<Integer, Ludicrous> ludicrousMap = hazelcastInstance.getMap("ludicrous");
         IMap<Integer, List<LudicrousQuestion>> ludicrousQuestions = hazelcastInstance.getMap("ludicrousQuestions");
