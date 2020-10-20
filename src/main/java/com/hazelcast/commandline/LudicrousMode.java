@@ -52,20 +52,20 @@ public class LudicrousMode {
         }
         int finalSelf = self;
         threadPool.execute(() -> {
-            int maxX;
-            int maxY;
-            try {
-                exec("resize", "-s", "5000", "5000");
-            } catch (Exception ignored) {
-            } finally {
-                try {
-                    maxX = Integer.parseInt(exec("tput", "cols"));
-                    maxY = Integer.parseInt(exec("tput", "lines"));
-                } catch (Exception ex) {
-                    maxX = 150;
-                    maxY = 150;
-                }
-            }
+            int maxX = 270;
+            int maxY = 76;
+//            try {
+//                exec("resize", "-s", "5000", "5000");
+//            } catch (Exception ignored) {
+//            } finally {
+//                try {
+//                    maxX = Integer.parseInt(exec("tput", "cols"));
+//                    maxY = Integer.parseInt(exec("tput", "lines"));
+//                } catch (Exception ex) {
+//                    maxX = 150;
+//                    maxY = 150;
+//                }
+//            }
 
             char[][] screen = new char[maxY][maxX];
 
@@ -81,6 +81,27 @@ public class LudicrousMode {
                 if (gameStarted) {
                     linePos += speed;
                 }
+
+//                int car1RelPos = 0;
+//                if (ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[finalSelf] > 0) {
+//                    car1RelPos++;
+//                } else if (ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[finalSelf] < 0) {
+//                    car1RelPos--;
+//                }
+//
+//                int car2RelPos = 0;
+//                if (ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[finalSelf] > 0) {
+//                    car2RelPos++;
+//                } else if (ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[finalSelf] < 0) {
+//                    car2RelPos--;
+//                }
+//
+//                int car3RelPos = 0;
+//                if (ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[finalSelf] > 0) {
+//                    car3RelPos++;
+//                } else if (ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[finalSelf] < 0) {
+//                    car3RelPos--;
+//                }
 
                 int car1RelPos = ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[finalSelf];
                 int car2RelPos = ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[finalSelf];
