@@ -59,12 +59,15 @@ public class LudicrousMode {
             int xPos = 0;
             int linePos = 0;
             int speed = 5;
+            boolean gameStarted = false;
             do {
                 setClearScreen(screen);
 
                 printLines(screen, linePos, (screen.length - 5) / 3);
                 printLines(screen, linePos, 2 * (screen.length - 5) / 3);
-                linePos += speed;
+                if (gameStarted) {
+                    linePos += speed;
+                }
 
                 int car1RelPos = ludicrousPositionsIMap.get(1).pos[0] - ludicrousPositionsIMap.get(1).pos[self];
                 int car2RelPos = ludicrousPositionsIMap.get(1).pos[1] - ludicrousPositionsIMap.get(1).pos[self];
@@ -73,11 +76,15 @@ public class LudicrousMode {
                 printCar(screen, xPos + car1RelPos, (screen.length - 5) / 6 - 3);
                 printCar(screen, xPos + car2RelPos, (screen.length - 5) / 2 - 3);
                 printCar(screen, xPos + car3RelPos, 5 * (screen.length - 5) / 6 - 3);
-                if (xPos <= screen[0].length / 2) {
+                if (gameStarted && xPos <= screen[0].length / 2) {
                     xPos += speed;
                 }
 
                 printMessage(screen, message);
+
+                if (!gameStarted) {
+                    printWelcomeMessage(screen, hazelcastInstance.getCluster().getMembers(), hazelcastInstance.getCluster().getLocalMember());
+                }
 
                 printScreen(screen);
 
@@ -104,6 +111,46 @@ public class LudicrousMode {
 //            Scanner scanner = new Scanner(System.in);
 //            message = scanner.nextLine();
 //        });
+    }
+
+    private void printWelcomeMessage(char[][] screen, Set<Member> members, Member localMember) {
+        String welcome = "#########################################################################################################################################\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                __  __                           ___                            __    __                                               #\n"
+                       + "#               /\\ \\/\\ \\                         /\\_ \\                          /\\ \\__/\\ \\                                              #\n"
+                       + "#               \\ \\ \\_\\ \\     __     ____      __\\//\\ \\     ___     __      ____\\ \\ ,_\\ \\/      ____                                    #\n"
+                       + "#                \\ \\  _  \\  /'__`\\  /\\_ ,`\\  /'__`\\\\ \\ \\   /'___\\ /'__`\\   /',__\\\\ \\ \\/\\/      /',__\\                                   #\n"
+                       + "#                 \\ \\ \\ \\ \\/\\ \\L\\.\\_\\/_/  /_/\\  __/ \\_\\ \\_/\\ \\__//\\ \\L\\.\\_/\\__, `\\\\ \\ \\_      /\\__, `\\                                  #\n"
+                       + "#                  \\ \\_\\ \\_\\ \\__/.\\_\\ /\\____\\ \\____\\/\\____\\ \\____\\ \\__/.\\_\\/\\____/ \\ \\__\\     \\/\\____/                                  #\n"
+                       + "#                   \\/_/\\/_/\\/__/\\/_/ \\/____/\\/____/\\/____/\\/____/\\/__/\\/_/\\/___/   \\/__/      \\/___/                                   #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                __                  __                                                                    __                           #\n"
+                       + "#               /\\ \\                /\\ \\  __                                           /'\\_/`\\            /\\ \\                          #\n"
+                       + "#               \\ \\ \\      __  __   \\_\\ \\/\\_\\    ___   _ __   ___   __  __    ____    /\\      \\    ___    \\_\\ \\     __                  #\n"
+                       + "#                \\ \\ \\  __/\\ \\/\\ \\  /'_` \\/\\ \\  /'___\\/\\`'__\\/ __`\\/\\ \\/\\ \\  /',__\\   \\ \\ \\__\\ \\  / __`\\  /'_` \\  /'__`\\                #\n"
+                       + "#                 \\ \\ \\L\\ \\ \\ \\_\\ \\/\\ \\L\\ \\ \\ \\/\\ \\__/\\ \\ \\//\\ \\L\\ \\ \\ \\_\\ \\/\\__, `\\   \\ \\ \\_/\\ \\/\\ \\L\\ \\/\\ \\L\\ \\/\\  __/                #\n"
+                       + "#                  \\ \\____/\\ \\____/\\ \\___,_\\ \\_\\ \\____\\\\ \\_\\\\ \\____/\\ \\____/\\/\\____/    \\ \\_\\\\ \\_\\ \\____/\\ \\___,_\\ \\____\\               #\n"
+                       + "#                   \\/___/  \\/___/  \\/__,_ /\\/_/\\/____/ \\/_/ \\/___/  \\/___/  \\/___/      \\/_/ \\/_/\\/___/  \\/__,_ /\\/____/               #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#                                      Current Players:                                                                                 #\n";
+        int memberCount = 1;
+        for (Member member : members) {
+              welcome += "                                       " + memberCount++ + "- " + member.getSocketAddress().getAddress() + ":" + member.getSocketAddress().getPort();
+              if (member.equals(localMember)) {
+                  welcome += " <=== This player";
+              }
+              welcome += "\n";
+        }
+              welcome += "#                                                                                                                                       #\n"
+                       + "#                                                                                                                                       #\n"
+                       + "#########################################################################################################################################";
+        printString(screen, welcome, (screen[0].length / 2) - 48, (screen.length / 2) - 10);
     }
 
     private void sleep() {
