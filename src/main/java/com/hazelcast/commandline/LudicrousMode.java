@@ -31,9 +31,11 @@ public class LudicrousMode {
     public void start() {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setClusterName("dev");
-        //        JoinConfig join = config.getNetworkConfig().getJoin();
-        //        join.getMulticastConfig().setEnabled(false);
-        //        join.getTcpIpConfig().setEnabled(true).addMember("10.212.134.150").addMember("10.212.134.151").addMember("10.212.134.152");
+        clientConfig.getNetworkConfig().setConnectionTimeout(5000);
+        clientConfig.getNetworkConfig().addAddress("3.89.27.196");
+//                JoinConfig join = config.getNetworkConfig().getJoin();
+//                join.getMulticastConfig().setEnabled(false);
+//                join.getTcpIpConfig().setEnabled(true).addMember("10.212.134.150").addMember("10.212.134.151").addMember("10.212.134.152");
         hazelcastInstance = HazelcastClient.newHazelcastClient(clientConfig);
 
 //        PNCounter counter = hazelcastInstance.getPNCounter("ludicrous");
@@ -173,12 +175,7 @@ public class LudicrousMode {
                 if (ludicrous.gameStarted) {
                     LudicrousQuestion question = questions.get(questionNumber);
                     if (input.equalsIgnoreCase(question.answer)) {
-                        ludicrousMap.executeOnKey(1, (EntryProcessor<Integer, Ludicrous, Object>) entry -> {
-                            Ludicrous value = entry.getValue();
-                            value.pos[finalSelf] += 10;
-                            entry.setValue(value);
-                            return null;
-                        });
+                        ludicrousMap.executeOnKey(1, new LudicrousEntryProcessor(finalSelf));
                         question = questions.get(++questionNumber);
                     }
                     message = question.question;
