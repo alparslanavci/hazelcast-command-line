@@ -2,7 +2,6 @@ package com.hazelcast.commandline;
 
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.EntryProcessor;
@@ -12,8 +11,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
@@ -75,6 +74,20 @@ public class LudicrousMode {
             int linePos = 0;
             int speed = 5;
             Random random = new Random();
+            int car1RelPos = 0;
+            int car2RelPos = 0;
+            int car3RelPos = 0;
+
+            int actualDifference1 = 0;
+            int latestDifference1 = 0;
+            int difference1 = 0;
+            int actualDifference2 = 0;
+            int latestDifference2 = 0;
+            int difference2 = 0;
+            int actualDifference3 = 0;
+            int latestDifference3 = 0;
+            int difference3 = 0;
+
             do {
                 setClearScreen(screen);
 
@@ -85,34 +98,61 @@ public class LudicrousMode {
                     linePos += speed;
                 }
 
-//                int car1RelPos = 0;
-//                if (ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[finalSelf] > 0) {
-//                    car1RelPos++;
-//                } else if (ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[finalSelf] < 0) {
-//                    car1RelPos--;
-//                }
-//
-//                int car2RelPos = 0;
-//                if (ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[finalSelf] > 0) {
-//                    car2RelPos++;
-//                } else if (ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[finalSelf] < 0) {
-//                    car2RelPos--;
-//                }
-//
-//                int car3RelPos = 0;
-//                if (ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[finalSelf] > 0) {
-//                    car3RelPos++;
-//                } else if (ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[finalSelf] < 0) {
-//                    car3RelPos--;
-//                }
+                actualDifference1 = ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[finalSelf];
+                if (latestDifference1 != actualDifference1){
+                    difference1 += (actualDifference1 - latestDifference1);
+                    latestDifference1 = actualDifference1;
+                }
+                if (difference1 > 0) {
+                    car1RelPos++;
+                    difference1--;
+                } else if (difference1 < 0) {
+                    car1RelPos--;
+                    difference1++;
+                }
 
-                int car1RelPos = ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[finalSelf];
-                int car2RelPos = ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[finalSelf];
-                int car3RelPos = ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[finalSelf];
+                actualDifference2 = ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[finalSelf];
+                if (latestDifference2 != actualDifference2){
+                    difference2 += (actualDifference2 - latestDifference2);
+                    latestDifference2 = actualDifference2;
+                }
+                if (difference2 > 0) {
+                    car2RelPos++;
+                    difference2--;
+                } else if (difference2 < 0) {
+                    car2RelPos--;
+                    difference2++;
+                }
 
-                printCar(screen, xPos + car1RelPos, (screen.length - 5) / 6 - 3);
-                printCar(screen, xPos + car2RelPos, (screen.length - 5) / 2 - 3);
-                printCar(screen, xPos + car3RelPos, 5 * (screen.length - 5) / 6 - 3);
+                actualDifference3 = ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[finalSelf];
+                if (latestDifference3 != actualDifference3){
+                    difference3 += (actualDifference3 - latestDifference3);
+                    latestDifference3 = actualDifference3;
+                }
+                if (difference3 > 0) {
+                    car3RelPos++;
+                    difference3--;
+                } else if (difference3 < 0) {
+                    car3RelPos--;
+                    difference3++;
+                }
+
+                Iterator<Member> memberIterator = hazelcastInstance.getCluster().getMembers().iterator();
+                Member member1 = memberIterator.next();
+                String member1name = member1.getSocketAddress().getAddress() + ":" + member1.getSocketAddress().getPort();
+                printCar(screen, xPos + car1RelPos, (screen.length - 5) / 6 - 3, member1name);
+                String member2name = "<Available>";
+                if (memberIterator.hasNext()) {
+                    Member member2 = memberIterator.next();
+                    member2name = member2.getSocketAddress().getAddress() + ":" + member2.getSocketAddress().getPort();
+                }
+                printCar(screen, xPos + car2RelPos, (screen.length - 5) / 2 - 3, member2name);
+                String member3name = "<Available>";
+                if (memberIterator.hasNext()) {
+                    Member member3 = memberIterator.next();
+                    member3name = member3.getSocketAddress().getAddress() + ":" + member3.getSocketAddress().getPort();
+                }
+                printCar(screen, xPos + car3RelPos, 5 * (screen.length - 5) / 6 - 3, member3name);
                 if (gameStarted && xPos <= screen[0].length / 2) {
                     xPos += speed;
                 }
@@ -266,17 +306,20 @@ public class LudicrousMode {
         }
     }
 
-    private void printCar(char[][] screen, int xPos, int yPos) {
+    private void printCar(char[][] screen, int xPos, int yPos, String name) {
         int x = 5 + xPos;
-        String car =
-                          "  HHHH        HHHH\n"
-                        + "HHHHHHHHHHHHHHHHHHHHH\n"
-                        + "HH                 HHHH\n"
-                        + "HH     Hello!      HHHHHHH\n"
-                        + "HH                 HHHH\n"
-                        + "HHHHHHHHHHHHHHHHHHHHH\n"
-                        + "  HHHH        HHHH\n";
-        printString(screen, car, x, yPos);
+        if (x > screen[0].length - 5) {
+            String ahead = name + " >>>";
+            printString(screen, ahead, screen[0].length - ahead.length(), yPos + 3);
+        } else if (x < 0){
+            String behind = "<<< " + name;
+            printString(screen, behind, behind.length(), yPos + 3);
+        } else {
+            String car = name + "\n" + "                  .\n" + "    __            |\\\n" + " __/__\\___________| \\_\n"
+                    + "|   ___    |  ,|   ___`-.\n" + "|  /   \\   |___/  /   \\  `-.\n" + "|_| (O) |________| (O) |____|\n"
+                    + "   \\___/          \\___/\n";
+            printString(screen, car, x, yPos);
+        }
     }
 
     private void printMessage(char[][] screen, String message) {
