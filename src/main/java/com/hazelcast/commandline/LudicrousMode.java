@@ -1,10 +1,13 @@
 package com.hazelcast.commandline;
 
+import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.IMap;
 
@@ -26,46 +29,57 @@ public class LudicrousMode {
     private HazelcastInstance hazelcastInstance;
 
     public void start() {
-        Config config = new Config();
-        config.setClusterName("ludicrousMode");
-//        JoinConfig join = config.getNetworkConfig().getJoin();
-//        join.getMulticastConfig().setEnabled(false);
-//        join.getTcpIpConfig().setEnabled(true).addMember("10.212.134.150").addMember("10.212.134.151").addMember("10.212.134.152");
-        hazelcastInstance = Hazelcast.newHazelcastInstance(config);
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.setClusterName("dev");
+        //        JoinConfig join = config.getNetworkConfig().getJoin();
+        //        join.getMulticastConfig().setEnabled(false);
+        //        join.getTcpIpConfig().setEnabled(true).addMember("10.212.134.150").addMember("10.212.134.151").addMember("10.212.134.152");
+        hazelcastInstance = HazelcastClient.newHazelcastClient(clientConfig);
+
+//        PNCounter counter = hazelcastInstance.getPNCounter("ludicrous");
+//        long self = counter.getAndIncrement();
+        String name = hazelcastInstance.getName();
+        int self = Integer.parseInt(name.charAt(name.length() - 1) + "") - 1;
+        hazelcastInstance.getList("clientList").add(hazelcastInstance.getName());
+
         IMap<Integer, Ludicrous> ludicrousMap = hazelcastInstance.getMap("ludicrous");
         IMap<Integer, List<LudicrousQuestion>> ludicrousQuestions = hazelcastInstance.getMap("ludicrousQuestions");
-        if (hazelcastInstance.getCluster().getMembers().iterator().next().equals(hazelcastInstance.getCluster().getLocalMember())) {
+
+        if (self == 0) {
             prepareQuestions(ludicrousQuestions);
             ludicrousMap.set(1, new Ludicrous());
         }
-        int self = 0;
-        int memberCounter = 0;
-        for (Member member : hazelcastInstance.getCluster().getMembers()) {
-            if (member.equals(hazelcastInstance.getCluster().getLocalMember())){
-                self = memberCounter;
-                break;
-            }
-            memberCounter++;
-        }
+//        int self = 0;
+//        int memberCounter = 0;
+//        for (Member member : hazelcastInstance.getCluster().getMembers()) {
+//            if (member.equals(hazelcastInstance.getCluster().getLocalMember())){
+//                self = memberCounter;
+//                break;
+//            }
+//            memberCounter++;
+//        }
         if (self == 0) {
             ludicrousMap.set(1, new Ludicrous());
         }
-        int finalSelf = self;
+        int finalSelf = (int) self;
+        System.out.println("------------------------" + finalSelf);
         threadPool.execute(() -> {
-            int maxX = 270;
-            int maxY = 76;
-//            try {
-//                exec("resize", "-s", "5000", "5000");
-//            } catch (Exception ignored) {
-//            } finally {
-//                try {
-//                    maxX = Integer.parseInt(exec("tput", "cols"));
-//                    maxY = Integer.parseInt(exec("tput", "lines"));
-//                } catch (Exception ex) {
-//                    maxX = 150;
-//                    maxY = 150;
-//                }
-//            }
+//            int maxX = 270;
+//            int maxY = 76;
+            int maxX;
+            int maxY;
+            try {
+                exec("resize", "-s", "5000", "5000");
+            } catch (Exception ignored) {
+            } finally {
+                try {
+                    maxX = Integer.parseInt(exec("tput", "cols"));
+                    maxY = Integer.parseInt(exec("tput", "lines"));
+                } catch (Exception ex) {
+                    maxX = 150;
+                    maxY = 150;
+                }
+            }
 
             char[][] screen = new char[maxY][maxX];
 
@@ -117,7 +131,7 @@ public class LudicrousMode {
                 printMessage(screen, message);
 
                 if (!gameStarted) {
-                    printWelcomeMessage(screen, hazelcastInstance.getCluster().getMembers(), hazelcastInstance.getCluster().getLocalMember());
+                    printWelcomeMessage(screen, hazelcastInstance.getCluster().getMembers(), hazelcastInstance.getName());
                 }
 
                 printScreen(screen);
@@ -151,7 +165,7 @@ public class LudicrousMode {
                 Scanner scanner = new Scanner(System.in);
                 input = scanner.nextLine();
                 if (!ludicrous.gameStarted){
-                    if (hazelcastInstance.getCluster().getMembers().iterator().next().equals(hazelcastInstance.getCluster().getLocalMember()) && input.equalsIgnoreCase("y")) {
+                    if (self == 0 && input.equalsIgnoreCase("y")) {
                         ludicrous.gameStarted = true;
                         ludicrousMap.set(1, ludicrous);
                     }
@@ -189,7 +203,7 @@ public class LudicrousMode {
         ludicrousQuestions.set(1, questions);
     }
 
-    private void printWelcomeMessage(char[][] screen, Set<Member> members, Member localMember) {
+    private void printWelcomeMessage(char[][] screen, Set<Member> members, String localMember) {
         String welcome = "#########################################################################################################################################\n"
                        + "#                                                                                                                                       #\n"
                        + "#                                                                                                                                       #\n"
@@ -218,7 +232,8 @@ public class LudicrousMode {
         int memberCount = 1;
         for (Member member : members) {
               welcome += "                                       " + memberCount++ + "- " + member.getSocketAddress().getAddress() + ":" + member.getSocketAddress().getPort();
-              if (member.equals(localMember)) {
+              if (memberCount == Integer.parseInt((localMember.charAt(localMember.length() - 1) + 1) + "")) {
+//              if (member.equals(localMember)) {
                   welcome += " <=== This player";
               }
               welcome += "\n";
