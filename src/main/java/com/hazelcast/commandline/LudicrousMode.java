@@ -5,6 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.IMap;
 
 import java.io.BufferedReader;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
@@ -26,30 +28,30 @@ public class LudicrousMode {
     public void start() {
         Config config = new Config();
         config.setClusterName("ludicrousMode");
-        JoinConfig join = config.getNetworkConfig().getJoin();
-        join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).addMember("172.30.0.56").addMember("172.30.0.244").addMember("172.30.0.31");
+//        JoinConfig join = config.getNetworkConfig().getJoin();
+//        join.getMulticastConfig().setEnabled(false);
+//        join.getTcpIpConfig().setEnabled(true).addMember("10.212.134.150").addMember("10.212.134.151").addMember("10.212.134.152");
         hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         IMap<Integer, Ludicrous> ludicrousMap = hazelcastInstance.getMap("ludicrous");
         IMap<Integer, List<LudicrousQuestion>> ludicrousQuestions = hazelcastInstance.getMap("ludicrousQuestions");
         if (hazelcastInstance.getCluster().getMembers().iterator().next().equals(hazelcastInstance.getCluster().getLocalMember())) {
             prepareQuestions(ludicrousQuestions);
+            ludicrousMap.set(1, new Ludicrous());
         }
+        int self = 0;
+        int memberCounter = 0;
+        for (Member member : hazelcastInstance.getCluster().getMembers()) {
+            if (member.equals(hazelcastInstance.getCluster().getLocalMember())){
+                self = memberCounter;
+                break;
+            }
+            memberCounter++;
+        }
+        if (self == 0) {
+            ludicrousMap.set(1, new Ludicrous());
+        }
+        int finalSelf = self;
         threadPool.execute(() -> {
-            int self = 0;
-            int memberCounter = 0;
-            for (Member member : hazelcastInstance.getCluster().getMembers()) {
-                if (member.equals(hazelcastInstance.getCluster().getLocalMember())){
-                    self = memberCounter;
-                    break;
-                }
-                memberCounter++;
-            }
-
-            if (self == 0) {
-                ludicrousMap.set(1, new Ludicrous());
-            }
-
             int maxX;
             int maxY;
             try {
@@ -80,9 +82,9 @@ public class LudicrousMode {
                     linePos += speed;
                 }
 
-                int car1RelPos = ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[self];
-                int car2RelPos = ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[self];
-                int car3RelPos = ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[self];
+                int car1RelPos = ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[finalSelf];
+                int car2RelPos = ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[finalSelf];
+                int car3RelPos = ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[finalSelf];
 
                 printCar(screen, xPos + car1RelPos, (screen.length - 5) / 6 - 3);
                 printCar(screen, xPos + car2RelPos, (screen.length - 5) / 2 - 3);
@@ -125,18 +127,24 @@ public class LudicrousMode {
             List<LudicrousQuestion> questions = ludicrousQuestions.get(1);
             while (true) {
                 Ludicrous ludicrous = ludicrousMap.get(1);
-                boolean gameStarted = ludicrous.gameStarted;
                 Scanner scanner = new Scanner(System.in);
                 input = scanner.nextLine();
-                if (!gameStarted){
+                if (!ludicrous.gameStarted){
                     if (hazelcastInstance.getCluster().getMembers().iterator().next().equals(hazelcastInstance.getCluster().getLocalMember()) && input.equalsIgnoreCase("y")) {
                         ludicrous.gameStarted = true;
                         ludicrousMap.set(1, ludicrous);
                     }
-                } else {
+                }
+                if (ludicrous.gameStarted) {
                     LudicrousQuestion question = questions.get(questionNumber);
                     if (input.equalsIgnoreCase(question.answer)) {
-                        questionNumber++;
+                        ludicrousMap.executeOnKey(1, (EntryProcessor<Integer, Ludicrous, Object>) entry -> {
+                            Ludicrous value = entry.getValue();
+                            value.pos[finalSelf] += 10;
+                            entry.setValue(value);
+                            return null;
+                        });
+                        question = questions.get(++questionNumber);
                     }
                     message = question.question;
                 }
