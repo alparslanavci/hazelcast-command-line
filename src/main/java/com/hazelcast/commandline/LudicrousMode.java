@@ -52,26 +52,29 @@ public class LudicrousMode {
         }
         int finalSelf = self;
         threadPool.execute(() -> {
-            int maxX = 270;
-            int maxY = 76;
-//            try {
-//                exec("resize", "-s", "5000", "5000");
-//            } catch (Exception ignored) {
-//            } finally {
-//                try {
-//                    maxX = Integer.parseInt(exec("tput", "cols"));
-//                    maxY = Integer.parseInt(exec("tput", "lines"));
-//                } catch (Exception ex) {
-//                    maxX = 150;
-//                    maxY = 150;
-//                }
-//            }
+//            int maxX = 270;
+//            int maxY = 76;
+            int maxX;
+            int maxY;
+            try {
+                exec("resize", "-s", "5000", "5000");
+            } catch (Exception ignored) {
+            } finally {
+                try {
+                    maxX = Integer.parseInt(exec("tput", "cols"));
+                    maxY = Integer.parseInt(exec("tput", "lines"));
+                } catch (Exception ex) {
+                    maxX = 150;
+                    maxY = 150;
+                }
+            }
 
             char[][] screen = new char[maxY][maxX];
 
             int xPos = 0;
             int linePos = 0;
             int speed = 5;
+            Random random = new Random();
             do {
                 setClearScreen(screen);
 
@@ -125,17 +128,19 @@ public class LudicrousMode {
                 sleep(100);
                 System.out.print("\033["+ (maxY + 1) +"A");
 
-//                Ludicrous ludicrousPositions = ludicrousMap.get(1);
+                Ludicrous ludicrousPositions = ludicrousMap.get(1);
 //                if (self == 0) {
 //                    ludicrousPositions.pos[0] += 1;
 //                }
-//                if (self == 1) {
-//                    ludicrousPositions.pos[1] += 2;
-//                }
+                if (gameStarted) {
+                    if (finalSelf == 1) {
+                        ludicrousPositions.pos[1] += random.nextInt(2);
+                    }
+                }
 //                if (self == 2) {
 //                    ludicrousPositions.pos[2] += 3;
 //                }
-//                ludicrousMap.set(1, ludicrousPositions);
+                ludicrousMap.set(1, ludicrousPositions);
             } while (true);
 
         });
