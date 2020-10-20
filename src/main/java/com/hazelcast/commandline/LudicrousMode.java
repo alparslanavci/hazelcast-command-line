@@ -2,6 +2,7 @@ package com.hazelcast.commandline;
 
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
@@ -22,6 +23,9 @@ public class LudicrousMode {
     public void start() {
         Config config = new Config();
         config.setClusterName("ludicrousMode");
+        JoinConfig join = config.getNetworkConfig().getJoin();
+        join.getMulticastConfig().setEnabled(false);
+        join.getTcpIpConfig().setEnabled(true).addMember("10.212.134.150").addMember("10.212.134.151").addMember("10.212.134.152");
         hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         IMap<Integer, Ludicrous> ludicrousPositionsIMap = hazelcastInstance.getMap("ludicrous");
         threadPool.execute(() -> {
@@ -91,7 +95,7 @@ public class LudicrousMode {
                 sleep(100);
                 System.out.print("\033["+ (maxY + 1) +"A");
 
-//                LudicrousPositions ludicrousPositions = ludicrousPositionsIMap.get(1);
+//                Ludicrous ludicrousPositions = ludicrousPositionsIMap.get(1);
 //                if (self == 0) {
 //                    ludicrousPositions.pos[0] += 1;
 //                }
