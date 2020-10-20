@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -88,6 +89,7 @@ public class LudicrousMode {
             int latestDifference3 = 0;
             int difference3 = 0;
 
+            int cycle = 0;
             do {
                 setClearScreen(screen);
 
@@ -140,20 +142,20 @@ public class LudicrousMode {
                 Iterator<Member> memberIterator = hazelcastInstance.getCluster().getMembers().iterator();
                 Member member1 = memberIterator.next();
                 String member1name = member1.getSocketAddress().getAddress() + ":" + member1.getSocketAddress().getPort();
-                printCar(screen, xPos + car1RelPos, (screen.length - 5) / 6 - 3, member1name);
+                printCar(screen, xPos + car1RelPos, (screen.length - 5) / 6 - 3, member1name, gameStarted);
                 String member2name = "<Available>";
                 if (memberIterator.hasNext()) {
                     Member member2 = memberIterator.next();
                     member2name = member2.getSocketAddress().getAddress() + ":" + member2.getSocketAddress().getPort();
                 }
-                printCar(screen, xPos + car2RelPos, (screen.length - 5) / 2 - 3, member2name);
+                printCar(screen, xPos + car2RelPos, (screen.length - 5) / 2 - 3, member2name, gameStarted);
                 String member3name = "<Available>";
                 if (memberIterator.hasNext()) {
                     Member member3 = memberIterator.next();
                     member3name = member3.getSocketAddress().getAddress() + ":" + member3.getSocketAddress().getPort();
                 }
-                printCar(screen, xPos + car3RelPos, 5 * (screen.length - 5) / 6 - 3, member3name);
-                if (gameStarted && xPos <= screen[0].length / 2) {
+                printCar(screen, xPos + car3RelPos, 5 * (screen.length - 5) / 6 - 3, member3name, gameStarted);
+                if (gameStarted && xPos <= screen[0].length / 2 - 21) {
                     xPos += speed;
                 }
 
@@ -181,7 +183,13 @@ public class LudicrousMode {
 //                    ludicrousPositions.pos[2] += 3;
 //                }
                 ludicrousMap.set(1, ludicrousPositions);
-            } while (true);
+
+                if (gameStarted) {
+                    cycle++;
+                }
+            } while (cycle <= 300);
+
+            printFinish(screen, ludicrousMap);
 
         });
 
@@ -216,6 +224,48 @@ public class LudicrousMode {
                 }
             }
         });
+    }
+
+    private void printFinish(char[][] screen, IMap<Integer, Ludicrous> ludicrousMap) {
+        setClearScreen(screen);
+
+        String finishString = "             ____                             __                     \n"
+                + " _______    /\\  _`\\   __          __         /\\ \\          _______   \n"
+                + "/\\______\\   \\ \\ \\L\\_\\/\\_\\    ___ /\\_\\    ____\\ \\ \\___     /\\______\\  \n"
+                + "\\/______/_   \\ \\  _\\/\\/\\ \\ /' _ `\\/\\ \\  /',__\\\\ \\  _ `\\   \\/______/_ \n"
+                + "  /\\______\\   \\ \\ \\/  \\ \\ \\/\\ \\/\\ \\ \\ \\/\\__, `\\\\ \\ \\ \\ \\    /\\______\\\n"
+                + "  \\/______/    \\ \\_\\   \\ \\_\\ \\_\\ \\_\\ \\_\\/\\____/ \\ \\_\\ \\_\\   \\/______/\n"
+                + "                \\/_/    \\/_/\\/_/\\/_/\\/_/\\/___/   \\/_/\\/_/            \n"
+                + "                                                                     \n"
+                + "                                                                     \n"
+                + "                               ----- RESULTS -----                   \n"
+                + "                                                                     \n";
+        printString(screen, finishString, (screen[0].length / 2) - 38, 25);
+
+        int[] posArray = ludicrousMap.get(1).pos;
+        int[] copyOf = Arrays.copyOf(posArray, posArray.length);
+        Arrays.sort(copyOf);
+
+        for (int i = copyOf.length - 1; i >= 0; i--) {
+            int pos = copyOf[i];
+            int posIndex = 0;
+            for (int j = 0; j < posArray.length; j++) {
+                int unsortedPos = posArray[j];
+                if (unsortedPos == pos){
+                    posIndex = j;
+                }
+            }
+            Set<Member> memberIterator = hazelcastInstance.getCluster().getMembers();
+            int count = 0;
+            for (Member member : memberIterator) {
+                if (count++ == posIndex) {
+                    String name = (3 - i) + " - " + member.getSocketAddress().getAddress() + ":" + member.getSocketAddress().getPort();
+                    printString(screen, name, (screen[0].length / 2) - (name.length() / 2), 37 + (-i));
+                }
+            }
+        }
+
+        printScreen(screen);
     }
 
     private void prepareQuestions(IMap<Integer, List<LudicrousQuestion>> ludicrousQuestions) {
@@ -271,7 +321,7 @@ public class LudicrousMode {
               welcome += "#                                                                                                                                       #\n"
                        + "#                                                                                                                                       #\n"
                        + "#########################################################################################################################################";
-        printString(screen, welcome, (screen[0].length / 2) - 48, (screen.length / 2) - 10);
+        printString(screen, welcome, (screen[0].length / 2) - 48, (screen.length / 2) - 18);
     }
 
     private void sleep(int time) {
@@ -306,7 +356,7 @@ public class LudicrousMode {
         }
     }
 
-    private void printCar(char[][] screen, int xPos, int yPos, String name) {
+    private void printCar(char[][] screen, int xPos, int yPos, String name, boolean gameStarted) {
         int x = 5 + xPos;
         if (x > screen[0].length - 5) {
             String ahead = name + " >>>";
@@ -315,9 +365,24 @@ public class LudicrousMode {
             String behind = "<<< " + name;
             printString(screen, behind, behind.length(), yPos + 3);
         } else {
-            String car = name + "\n" + "                  .\n" + "    __            |\\\n" + " __/__\\___________| \\_\n"
-                    + "|   ___    |  ,|   ___`-.\n" + "|  /   \\   |___/  /   \\  `-.\n" + "|_| (O) |________| (O) |____|\n"
+            String car = name + "\n"
+                    + "                  .\n"
+                    + "    __            |\\\n"
+                    + " __/__\\___________| \\_\n"
+                    + "|   ___    |  ,|   ___`-.\n"
+                    + "|  /   \\   |___/  /   \\  `-.\n"
+                    + "|_| (O) |________| (O) |____|\n"
                     + "   \\___/          \\___/\n";
+            if (gameStarted) {
+                car =     "         " + name + "\n"
+                        + " ----                     .\n"
+                        + "      ---   __            |\\\n"
+                        + "----     __/__\\___________| \\_\n"
+                        + "        |   ___    |  ,|   ___`-.\n"
+                        + "  ---   |  /   \\   |___/  /   \\  `-.\n"
+                        + "        |_| (O) |________| (O) |____|\n"
+                        + "   _______ \\___/          \\___/\n";
+            }
             printString(screen, car, x, yPos);
         }
     }
