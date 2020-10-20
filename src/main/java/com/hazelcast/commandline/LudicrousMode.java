@@ -10,6 +10,9 @@ import com.hazelcast.map.IMap;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -25,9 +28,13 @@ public class LudicrousMode {
         config.setClusterName("ludicrousMode");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).addMember("10.212.134.150").addMember("10.212.134.151").addMember("10.212.134.152");
+        join.getTcpIpConfig().setEnabled(true).addMember("54.242.216.103").addMember("35.175.194.182").addMember("54.91.151.18");
         hazelcastInstance = Hazelcast.newHazelcastInstance(config);
-        IMap<Integer, Ludicrous> ludicrousPositionsIMap = hazelcastInstance.getMap("ludicrous");
+        IMap<Integer, Ludicrous> ludicrousMap = hazelcastInstance.getMap("ludicrous");
+        IMap<Integer, List<LudicrousQuestion>> ludicrousQuestions = hazelcastInstance.getMap("ludicrousQuestions");
+        if (hazelcastInstance.getCluster().getMembers().iterator().next().equals(hazelcastInstance.getCluster().getLocalMember())) {
+            prepareQuestions(ludicrousQuestions);
+        }
         threadPool.execute(() -> {
             int self = 0;
             int memberCounter = 0;
@@ -40,7 +47,7 @@ public class LudicrousMode {
             }
 
             if (self == 0) {
-                ludicrousPositionsIMap.set(1, new Ludicrous());
+                ludicrousMap.set(1, new Ludicrous());
             }
 
             int maxX;
@@ -66,16 +73,16 @@ public class LudicrousMode {
             do {
                 setClearScreen(screen);
 
-                boolean gameStarted = ludicrousPositionsIMap.get(1).gameStarted;
+                boolean gameStarted = ludicrousMap.get(1).gameStarted;
                 printLines(screen, linePos, (screen.length - 5) / 3);
                 printLines(screen, linePos, 2 * (screen.length - 5) / 3);
                 if (gameStarted) {
                     linePos += speed;
                 }
 
-                int car1RelPos = ludicrousPositionsIMap.get(1).pos[0] - ludicrousPositionsIMap.get(1).pos[self];
-                int car2RelPos = ludicrousPositionsIMap.get(1).pos[1] - ludicrousPositionsIMap.get(1).pos[self];
-                int car3RelPos = ludicrousPositionsIMap.get(1).pos[2] - ludicrousPositionsIMap.get(1).pos[self];
+                int car1RelPos = ludicrousMap.get(1).pos[0] - ludicrousMap.get(1).pos[self];
+                int car2RelPos = ludicrousMap.get(1).pos[1] - ludicrousMap.get(1).pos[self];
+                int car3RelPos = ludicrousMap.get(1).pos[2] - ludicrousMap.get(1).pos[self];
 
                 printCar(screen, xPos + car1RelPos, (screen.length - 5) / 6 - 3);
                 printCar(screen, xPos + car2RelPos, (screen.length - 5) / 2 - 3);
@@ -95,7 +102,7 @@ public class LudicrousMode {
                 sleep(100);
                 System.out.print("\033["+ (maxY + 1) +"A");
 
-//                Ludicrous ludicrousPositions = ludicrousPositionsIMap.get(1);
+//                Ludicrous ludicrousPositions = ludicrousMap.get(1);
 //                if (self == 0) {
 //                    ludicrousPositions.pos[0] += 1;
 //                }
@@ -105,28 +112,52 @@ public class LudicrousMode {
 //                if (self == 2) {
 //                    ludicrousPositions.pos[2] += 3;
 //                }
-//                ludicrousPositionsIMap.set(1, ludicrousPositions);
+//                ludicrousMap.set(1, ludicrousPositions);
             } while (true);
 
         });
 
         threadPool.execute(() -> {
             sleep(1000);
-            message = "5 + 15 = ";
+            message = "";
             String input = "";
+            int questionNumber = 0;
+            List<LudicrousQuestion> questions = ludicrousQuestions.get(1);
             while (true) {
-                Ludicrous ludicrous = ludicrousPositionsIMap.get(1);
+                Ludicrous ludicrous = ludicrousMap.get(1);
                 boolean gameStarted = ludicrous.gameStarted;
                 Scanner scanner = new Scanner(System.in);
                 input = scanner.nextLine();
                 if (!gameStarted){
                     if (hazelcastInstance.getCluster().getMembers().iterator().next().equals(hazelcastInstance.getCluster().getLocalMember()) && input.equalsIgnoreCase("y")) {
                         ludicrous.gameStarted = true;
-                        ludicrousPositionsIMap.set(1, ludicrous);
+                        ludicrousMap.set(1, ludicrous);
                     }
+                } else {
+                    LudicrousQuestion question = questions.get(questionNumber);
+                    if (input.equalsIgnoreCase(question.answer)) {
+                        questionNumber++;
+                    }
+                    message = question.question;
                 }
             }
         });
+    }
+
+    private void prepareQuestions(IMap<Integer, List<LudicrousQuestion>> ludicrousQuestions) {
+        Random random = new Random();
+        ArrayList<LudicrousQuestion> questions = new ArrayList<>();
+        int bound = 10;
+        for (int i = 0; i < 100; i++) {
+            int first = random.nextInt(bound);
+            int second = random.nextInt(bound);
+            int answer = first + second;
+            LudicrousQuestion question = new LudicrousQuestion();
+            question.question = first + " + " + second + " = ?";
+            question.answer = String.valueOf(answer);
+            questions.add(question);
+        }
+        ludicrousQuestions.set(1, questions);
     }
 
     private void printWelcomeMessage(char[][] screen, Set<Member> members, Member localMember) {
