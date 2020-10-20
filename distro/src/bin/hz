@@ -33,6 +33,6 @@ fi
 
 export CLASSPATH="$HAZELCAST_HOME/lib/hazelcast-command-line-CLI_VERSION.jar:$HAZELCAST_HOME/lib/hazelcast-all-HZ_VERSION.jar"
 
-HZ_CMD="${RUN_JAVA} -cp ${CLASSPATH} ${JAVA_OPTS} -Dhazelcast.commandline.workingdirectory=${HAZELCAST_HOME} com.hazelcast.commandline.HazelcastCommandLine"
+HZ_CMD="${RUN_JAVA} -cp ${CLASSPATH} ${JAVA_OPTS} -Djava.net.preferIPv4Stack=true -Dhazelcast.commandline.workingdirectory=${HAZELCAST_HOME} com.hazelcast.commandline.HazelcastCommandLine"
 
 ${HZ_CMD} "$@"

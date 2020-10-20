@@ -1,5 +1,7 @@
 package com.hazelcast.commandline;
 
+import com.hazelcast.cluster.Member;
+import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
@@ -7,7 +9,9 @@ import com.hazelcast.map.IMap;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Iterator;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -17,8 +21,23 @@ public class LudicrousMode {
 
     public void start() {
         threadPool.execute(() -> {
-//            HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance();
-//            IMap<Integer, LudicrousPositions> ludicrousPositionsIMap = hazelcastInstance.getMap("ludicrous");
+            Config config = new Config();
+            config.setClusterName("ludicrousMode");
+            HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
+            IMap<Integer, LudicrousPositions> ludicrousPositionsIMap = hazelcastInstance.getMap("ludicrous");
+            int self = 0;
+            int memberCounter = 0;
+            for (Member member : hazelcastInstance.getCluster().getMembers()) {
+                if (member.equals(hazelcastInstance.getCluster().getLocalMember())){
+                    self = memberCounter;
+                    break;
+                }
+                memberCounter++;
+            }
+
+            if (self == 0) {
+                ludicrousPositionsIMap.set(1, new LudicrousPositions());
+            }
 
             int maxX;
             int maxY;
@@ -47,9 +66,13 @@ public class LudicrousMode {
                 printLines(screen, linePos, 2 * (screen.length - 5) / 3);
                 linePos += speed;
 
-                printCar(screen, xPos, (screen.length - 5) / 6 - 3);
-                printCar(screen, xPos, (screen.length - 5) / 2 - 3);
-                printCar(screen, xPos, 5 * (screen.length - 5) / 6 - 3);
+                int car1RelPos = ludicrousPositionsIMap.get(1).pos[0] - ludicrousPositionsIMap.get(1).pos[self];
+                int car2RelPos = ludicrousPositionsIMap.get(1).pos[1] - ludicrousPositionsIMap.get(1).pos[self];
+                int car3RelPos = ludicrousPositionsIMap.get(1).pos[2] - ludicrousPositionsIMap.get(1).pos[self];
+
+                printCar(screen, xPos + car1RelPos, (screen.length - 5) / 6 - 3);
+                printCar(screen, xPos + car2RelPos, (screen.length - 5) / 2 - 3);
+                printCar(screen, xPos + car3RelPos, 5 * (screen.length - 5) / 6 - 3);
                 if (xPos <= screen[0].length / 2) {
                     xPos += speed;
                 }
@@ -60,6 +83,18 @@ public class LudicrousMode {
 
                 sleep();
                 System.out.print("\033["+ (maxY + 1) +"A");
+
+//                LudicrousPositions ludicrousPositions = ludicrousPositionsIMap.get(1);
+//                if (self == 0) {
+//                    ludicrousPositions.pos[0] += 1;
+//                }
+//                if (self == 1) {
+//                    ludicrousPositions.pos[1] += 2;
+//                }
+//                if (self == 2) {
+//                    ludicrousPositions.pos[2] += 3;
+//                }
+//                ludicrousPositionsIMap.set(1, ludicrousPositions);
             } while (true);
 
         });
