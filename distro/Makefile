@@ -24,9 +24,10 @@ clean-dist:
 
 get-artifacts:
 	# get artifacts
-	cd .. && mvn clean package && cd -
+	cd .. && mvn clean package -DskipTests && cd -
 	mkdir -p ${DIST}
-	wget -O ${DIST}/${HZ_INSTALL_TAR} "https://download.hazelcast.com/download.jsp?version=hazelcast-${HZ_VERSION}&type=tar&p="
+	#wget -O ${DIST}/${HZ_INSTALL_TAR} "https://download.hazelcast.com/download.jsp?version=hazelcast-${HZ_VERSION}&type=tar&p="
+	cp src/${HZ_INSTALL_TAR} ${DIST}/${HZ_INSTALL_TAR}
 	tar -zxf ${DIST}/${HZ_INSTALL_TAR} -C ${DIST}
 	rm ${DIST}/${HZ_INSTALL_TAR}
 	cp ../target/hazelcast-command-line-*-cli.jar ${HZ_LIB}/hazelcast-command-line-${CLI_VERSION}.jar
@@ -39,5 +40,5 @@ get-artifacts:
 
 package:
 	# creating package
-	tar -zcf ${DIST}/${HZ_INSTALL_TAR} -C ${DIST} ${HZ_INSTALL_NAME}
+	#tar -zcf ${DIST}/${HZ_INSTALL_TAR} -C ${DIST} ${HZ_INSTALL_NAME}
 	@echo "Archive ${DIST}/${HZ_INSTALL_TAR} created successfully"

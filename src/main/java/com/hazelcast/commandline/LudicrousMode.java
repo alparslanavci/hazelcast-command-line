@@ -9,7 +9,6 @@ import com.hazelcast.map.IMap;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Iterator;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -18,13 +17,14 @@ import java.util.concurrent.Executors;
 public class LudicrousMode {
     ExecutorService threadPool = Executors.newFixedThreadPool(2);
     private String message = "";
+    private HazelcastInstance hazelcastInstance;
 
     public void start() {
+        Config config = new Config();
+        config.setClusterName("ludicrousMode");
+        hazelcastInstance = Hazelcast.newHazelcastInstance(config);
+        IMap<Integer, Ludicrous> ludicrousPositionsIMap = hazelcastInstance.getMap("ludicrous");
         threadPool.execute(() -> {
-            Config config = new Config();
-            config.setClusterName("ludicrousMode");
-            HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
-            IMap<Integer, LudicrousPositions> ludicrousPositionsIMap = hazelcastInstance.getMap("ludicrous");
             int self = 0;
             int memberCounter = 0;
             for (Member member : hazelcastInstance.getCluster().getMembers()) {
@@ -36,7 +36,7 @@ public class LudicrousMode {
             }
 
             if (self == 0) {
-                ludicrousPositionsIMap.set(1, new LudicrousPositions());
+                ludicrousPositionsIMap.set(1, new Ludicrous());
             }
 
             int maxX;
@@ -59,10 +59,10 @@ public class LudicrousMode {
             int xPos = 0;
             int linePos = 0;
             int speed = 5;
-            boolean gameStarted = false;
             do {
                 setClearScreen(screen);
 
+                boolean gameStarted = ludicrousPositionsIMap.get(1).gameStarted;
                 printLines(screen, linePos, (screen.length - 5) / 3);
                 printLines(screen, linePos, 2 * (screen.length - 5) / 3);
                 if (gameStarted) {
@@ -88,7 +88,7 @@ public class LudicrousMode {
 
                 printScreen(screen);
 
-                sleep();
+                sleep(100);
                 System.out.print("\033["+ (maxY + 1) +"A");
 
 //                LudicrousPositions ludicrousPositions = ludicrousPositionsIMap.get(1);
@@ -106,11 +106,23 @@ public class LudicrousMode {
 
         });
 
-//        threadPool.execute(() -> {
-//            message = "5 + 15 = ";
-//            Scanner scanner = new Scanner(System.in);
-//            message = scanner.nextLine();
-//        });
+        threadPool.execute(() -> {
+            sleep(1000);
+            message = "5 + 15 = ";
+            String input = "";
+            while (true) {
+                Ludicrous ludicrous = ludicrousPositionsIMap.get(1);
+                boolean gameStarted = ludicrous.gameStarted;
+                Scanner scanner = new Scanner(System.in);
+                input = scanner.nextLine();
+                if (!gameStarted){
+                    if (hazelcastInstance.getCluster().getMembers().iterator().next().equals(hazelcastInstance.getCluster().getLocalMember()) && input.equalsIgnoreCase("y")) {
+                        ludicrous.gameStarted = true;
+                        ludicrousPositionsIMap.set(1, ludicrous);
+                    }
+                }
+            }
+        });
     }
 
     private void printWelcomeMessage(char[][] screen, Set<Member> members, Member localMember) {
@@ -153,9 +165,9 @@ public class LudicrousMode {
         printString(screen, welcome, (screen[0].length / 2) - 48, (screen.length / 2) - 10);
     }
 
-    private void sleep() {
+    private void sleep(int time) {
         try {
-            Thread.sleep(100);
+            Thread.sleep(time);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
