@@ -24,6 +24,11 @@ public class LudicrousMode {
     ExecutorService threadPool = Executors.newFixedThreadPool(2);
     private String message = "";
     private HazelcastInstance hazelcastInstance;
+    private int HIGHEST_CYCLE = 350;
+    private int SLEEP = 100;
+    private int secondsPassed;
+    private int remainingSeconds = 0;
+    private final int TOTAL_SECONDS = HIGHEST_CYCLE / (1000 / SLEEP);
 
     public void start() {
         Config config = new Config();
@@ -93,6 +98,7 @@ public class LudicrousMode {
             do {
                 setClearScreen(screen);
 
+                boolean countDownStarted = ludicrousMap.get(1).countDownStarted;
                 boolean gameStarted = ludicrousMap.get(1).gameStarted;
                 printLines(screen, linePos, (screen.length - 5) / 3);
                 printLines(screen, linePos, 2 * (screen.length - 5) / 3);
@@ -161,13 +167,23 @@ public class LudicrousMode {
 
                 printMessage(screen, message);
 
-                if (!gameStarted) {
-                    printWelcomeMessage(screen, hazelcastInstance.getCluster().getMembers(), hazelcastInstance.getCluster().getLocalMember());
+                if (!countDownStarted) {
+                    printWelcomeMessage(screen, hazelcastInstance.getCluster().getMembers(), hazelcastInstance.getCluster().getLocalMember(),finalSelf == 0);
+                }
+                
+                if(countDownStarted && !gameStarted){
+                    LudicrousQuestion question = ludicrousQuestions.get(1).get(0);
+                    message = question.question;
+                    printCountDown(screen, cycle, finalSelf == 0, ludicrousMap);
+                }
+
+                if (gameStarted){
+                    printClock(screen, cycle);
                 }
 
                 printScreen(screen);
 
-                sleep(100);
+                sleep(SLEEP);
                 System.out.print("\033["+ (maxY + 1) +"A");
 
                 Ludicrous ludicrousPositions = ludicrousMap.get(1);
@@ -184,10 +200,10 @@ public class LudicrousMode {
 //                }
                 ludicrousMap.set(1, ludicrousPositions);
 
-                if (gameStarted) {
+                if (countDownStarted || gameStarted) {
                     cycle++;
                 }
-            } while (cycle <= 300);
+            } while (cycle <= HIGHEST_CYCLE);
 
             printFinish(screen, ludicrousMap);
 
@@ -203,9 +219,9 @@ public class LudicrousMode {
                 Ludicrous ludicrous = ludicrousMap.get(1);
                 Scanner scanner = new Scanner(System.in);
                 input = scanner.nextLine();
-                if (!ludicrous.gameStarted){
+                if (!ludicrous.countDownStarted && !ludicrous.gameStarted){
                     if (hazelcastInstance.getCluster().getMembers().iterator().next().equals(hazelcastInstance.getCluster().getLocalMember()) && input.equalsIgnoreCase("y")) {
-                        ludicrous.gameStarted = true;
+                        ludicrous.countDownStarted = true;
                         ludicrousMap.set(1, ludicrous);
                     }
                 }
@@ -226,6 +242,159 @@ public class LudicrousMode {
         });
     }
 
+    private void printCountDown(char[][] screen, int cycle, boolean master, IMap<Integer, Ludicrous> ludicrousMap) {
+        int max = 5;
+        
+        if (cycle % 10 == 0){
+            secondsPassed = cycle / 10;
+            remainingSeconds = max - secondsPassed;
+        }
+        
+        if (remainingSeconds == 0){
+            secondsPassed = 0;
+            if (master) {
+                Ludicrous ludicrous = ludicrousMap.get(1);
+                ludicrous.gameStarted = true;
+                ludicrousMap.set(1, ludicrous);
+            }
+            remainingSeconds = TOTAL_SECONDS - 5;
+            return;
+        }
+
+        String welcome = "#########################################################################################################################################\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                   ########     ###     ######  ########     ######  ########    ###    ########  ########  ######                     #\n"
+                + "#                   #     ##   ## ##   ##    ## ##          ##    ##    ##      ## ##   ##     ##    ##    ##    ##                     #\n"
+                + "#                   #     ##  ##   ##  ##       ##          ##          ##     ##   ##  ##     ##    ##    ##                           #\n"
+                + "#                   #######  ##     ## ##       ######       ######     ##    ##     ## ########     ##     ######                      #\n"
+                + "#                   #   ##   ######### ##       ##                ##    ##    ######### ##   ##      ##          ##                     #\n"
+                + "#                   #    ##  ##     ## ##    ## ##          ##    ##    ##    ##     ## ##    ##     ##    ##    ##                     #\n"
+                + "#                   #     ## ##     ##  ######  ########     ######     ##    ##     ## ##     ##    ##     ######                      #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                           #### ##    ##                                                               #\n"
+                + "#                                                            ##  ###   ##                                                               #\n"
+                + "#                                                            ##  ####  ##                                                               #\n"
+                + "#                                                            ##  ## ## ##                                                               #\n"
+                + "#                                                            ##  ##  ####                                                               #\n"
+                + "#                                                            ##  ##   ###                                                               #\n"
+                + "#                                                           #### ##    ##                                                               #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#                                                                                                                                       #\n"
+                + "#########################################################################################################################################\n";
+
+        printString(screen, welcome, (screen[0].length / 2) - 48, (screen.length / 2) - 18);
+        printString(screen, NUMBERS[remainingSeconds],screen[0].length / 2 + 14 , (screen.length / 2) + 5);
+    }
+
+    private void printClock(char[][] screen, int cycle) {
+
+        printString(screen, NUMBERS[0],screen[0].length - 42, 3);
+        printString(screen, NUMBERS[10],screen[0].length - 31, 3);
+        if (cycle % 10 == 0){
+            secondsPassed = cycle / 10;
+            remainingSeconds = TOTAL_SECONDS - secondsPassed;
+        }
+        printString(screen, NUMBERS[remainingSeconds /10],screen[0].length - 27, 3);
+        printString(screen, NUMBERS[remainingSeconds %10],screen[0].length - 16, 3);
+
+    }
+
+    String[] NUMBERS =  {"   #####   \n"
+                       + "  ##   ##  \n"
+                       + " ##     ## \n"
+                       + " ##     ## \n"
+                       + " ##     ## \n"
+                       + "  ##   ##  \n"
+                       + "   #####   \n",
+                       "     ##    \n"
+                     + "   ####    \n"
+                     + "     ##    \n"
+                     + "     ##    \n"
+                     + "     ##    \n"
+                     + "     ##    \n"
+                     + "   ######  \n",
+                       "  #######  \n"
+                     + " ##     ## \n"
+                     + "        ## \n"
+                     + "  #######  \n"
+                     + " ##        \n"
+                     + " ##        \n"
+                     + " ######### \n",
+                       "  #######  \n"
+                     + " ##     ## \n"
+                     + "        ## \n"
+                     + "  #######  \n"
+                     + "        ## \n"
+                     + " ##     ## \n"
+                     + "  #######  \n",
+                       " ##        \n"
+                     + " ##    ##  \n"
+                     + " ##    ##  \n"
+                     + " ##    ##  \n"
+                     + " ######### \n"
+                     + "       ##  \n"
+                     + "       ##  \n",
+                       "  ######## \n"
+                     + "  ##       \n"
+                     + "  ##       \n"
+                     + "  #######  \n"
+                     + "        ## \n"
+                     + "  ##    ## \n"
+                     + "   ######  \n",
+                       "  #######  \n"
+                     + " ##     ## \n"
+                     + " ##        \n"
+                     + " ########  \n"
+                     + " ##     ## \n"
+                     + " ##     ## \n"
+                     + "  #######  \n",
+                       "  ######## \n"
+                     + "  ##    ## \n"
+                     + "      ##   \n"
+                     + "     ##    \n"
+                     + "    ##     \n"
+                     + "    ##     \n"
+                     + "    ##     \n",
+                       "  #######  \n"
+                     + " ##     ## \n"
+                     + " ##     ## \n"
+                     + "  #######  \n"
+                     + " ##     ## \n"
+                     + " ##     ## \n"
+                     + "  #######  \n",
+                       "  #######  \n"
+                     + " ##     ## \n"
+                     + " ##     ## \n"
+                     + "  ######## \n"
+                     + "        ## \n"
+                     + " ##     ## \n"
+                     + "  #######  \n",
+                       "    \n"
+                     + "    \n"
+                     + " ## \n"
+                     + "    \n"
+                     + " ## \n"
+                     + "    \n"
+                     + "    \n"};
+
     private void printFinish(char[][] screen, IMap<Integer, Ludicrous> ludicrousMap) {
         setClearScreen(screen);
 
@@ -238,7 +407,7 @@ public class LudicrousMode {
                 + "                \\/_/    \\/_/\\/_/\\/_/\\/_/\\/___/   \\/_/\\/_/            \n"
                 + "                                                                     \n"
                 + "                                                                     \n"
-                + "                               ----- RESULTS -----                   \n"
+                + "                             ----- RESULTS -----                     \n"
                 + "                                                                     \n";
         printString(screen, finishString, (screen[0].length / 2) - 38, 25);
 
@@ -259,7 +428,7 @@ public class LudicrousMode {
             int count = 0;
             for (Member member : memberIterator) {
                 if (count++ == posIndex) {
-                    String name = (3 - i) + " - " + member.getSocketAddress().getAddress() + ":" + member.getSocketAddress().getPort();
+                    String name = (3 - i) + " - " + member.getSocketAddress().getAddress() + ":" + member.getSocketAddress().getPort() + "        " + (pos * 10) + " pts\n";
                     printString(screen, name, (screen[0].length / 2) - (name.length() / 2), 37 + (-i));
                 }
             }
@@ -284,7 +453,7 @@ public class LudicrousMode {
         ludicrousQuestions.set(1, questions);
     }
 
-    private void printWelcomeMessage(char[][] screen, Set<Member> members, Member localMember) {
+    private void printWelcomeMessage(char[][] screen, Set<Member> members, Member localMember, boolean master) {
         String welcome = "#########################################################################################################################################\n"
                        + "#                                                                                                                                       #\n"
                        + "#                                                                                                                                       #\n"
@@ -307,8 +476,14 @@ public class LudicrousMode {
                        + "#                  \\ \\____/\\ \\____/\\ \\___,_\\ \\_\\ \\____\\\\ \\_\\\\ \\____/\\ \\____/\\/\\____/    \\ \\_\\\\ \\_\\ \\____/\\ \\___,_\\ \\____\\               #\n"
                        + "#                   \\/___/  \\/___/  \\/__,_ /\\/_/\\/____/ \\/_/ \\/___/  \\/___/  \\/___/      \\/_/ \\/_/\\/___/  \\/__,_ /\\/____/               #\n"
                        + "#                                                                                                                                       #\n"
-                       + "#                                                                                                                                       #\n"
-                       + "#                                                                                                                                       #\n"
+                       + "#                                                                                                                                       #\n";
+        if(master) {
+              welcome += "#                                     Please press 'y' and then 'Enter' to start the race!                                              #\n";
+        }
+        else {
+              welcome += "#                                     Please wait Master Member to start the race!                                                      #\n";
+        }
+              welcome += "#                                                                                                                                       #\n"
                        + "#                                      Current Players:                                                                                 #\n";
         int memberCount = 1;
         for (Member member : members) {
@@ -316,7 +491,7 @@ public class LudicrousMode {
               if (member.equals(localMember)) {
                   welcome += " <=== This player";
               }
-              welcome += "\n";
+              welcome += "                                                            \n";
         }
               welcome += "#                                                                                                                                       #\n"
                        + "#                                                                                                                                       #\n"
