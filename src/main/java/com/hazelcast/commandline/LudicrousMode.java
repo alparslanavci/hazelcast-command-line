@@ -29,6 +29,7 @@ public class LudicrousMode {
     private int secondsPassed;
     private int remainingSeconds = 0;
     private final int TOTAL_SECONDS = HIGHEST_CYCLE / (1000 / SLEEP);
+    private boolean botEnabled;
 
     public void start() {
         Config config = new Config();
@@ -190,7 +191,8 @@ public class LudicrousMode {
 //                if (self == 0) {
 //                    ludicrousPositions.pos[0] += 1;
 //                }
-                if (gameStarted) {
+
+                if (botEnabled && gameStarted) {
                     if (finalSelf == 1) {
                         ludicrousPositions.pos[1] += random.nextInt(2);
                     }
@@ -235,6 +237,9 @@ public class LudicrousMode {
                             return null;
                         });
                         question = questions.get(++questionNumber);
+                    }
+                    if (input.equalsIgnoreCase("b")) {
+                        botEnabled = true;
                     }
                     message = question.question;
                 }
@@ -393,7 +398,8 @@ public class LudicrousMode {
                      + "    \n"
                      + " ## \n"
                      + "    \n"
-                     + "    \n"};
+                     + "    \n", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""
+            , "", "", "", "", "", "", "", ""};
 
     private void printFinish(char[][] screen, IMap<Integer, Ludicrous> ludicrousMap) {
         setClearScreen(screen);
