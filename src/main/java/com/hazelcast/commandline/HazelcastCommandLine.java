@@ -15,6 +15,9 @@
 
 package com.hazelcast.commandline;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.core.Hazelcast;
 import picocli.CommandLine;
 
 import java.io.IOException;
@@ -100,21 +103,27 @@ class HazelcastCommandLine
                     description = "Output with FINEST level verbose logging.")
                     boolean finestVerbose)
             throws IOException, InterruptedException {
-        List<String> args = new ArrayList<>();
-        if (!isNullOrEmpty(configFilePath)) {
-            args.add("-Dhazelcast.config=" + configFilePath);
-        } else {
-            args.add("-Dhazelcast.default.config=" + AbstractCommandLine.WORKING_DIRECTORY + "/bin/hazelcast.xml");
-        }
-        args.add("-Dnetwork.port=" + port);
-        args.add("-Dnetwork.interface=" + hzInterface);
-        if (javaOptions != null && javaOptions.size() > 0) {
-            args.addAll(javaOptions);
-        }
-        args.add("-Djava.net.preferIPv4Stack=true");
-        addLogging(args, verbose, finestVerbose);
-
-        buildAndStartJavaProcess(args, additionalClassPath);
+        Config config = new Config();
+        config.setClusterName("doyouloveme");
+        JoinConfig join = config.getNetworkConfig().getJoin();
+        join.getMulticastConfig().setEnabled(false);
+        join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
+        Hazelcast.newHazelcastInstance(config);
+//        List<String> args = new ArrayList<>();
+//        if (!isNullOrEmpty(configFilePath)) {
+//            args.add("-Dhazelcast.config=" + configFilePath);
+//        } else {
+//            args.add("-Dhazelcast.default.config=" + AbstractCommandLine.WORKING_DIRECTORY + "/bin/hazelcast.xml");
+//        }
+//        args.add("-Dnetwork.port=" + port);
+//        args.add("-Dnetwork.interface=" + hzInterface);
+//        if (javaOptions != null && javaOptions.size() > 0) {
+//            args.addAll(javaOptions);
+//        }
+//        args.add("-Djava.net.preferIPv4Stack=true");
+//        addLogging(args, verbose, finestVerbose);
+//
+//        buildAndStartJavaProcess(args, additionalClassPath);
     }
 
     private void buildAndStartJavaProcess(List<String> parameters, String[] additionalClassPath)
@@ -160,6 +169,12 @@ class HazelcastCommandLine
     public void ludicrousMode(){
         LudicrousMode ludicrous = new LudicrousMode();
         ludicrous.start();
+    }
+
+    @Command(name = "--do-you-love-me", hidden = true)
+    public void doYouLoveMe(){
+        DoYouLoveMe doYouLoveMe = new DoYouLoveMe();
+        doYouLoveMe.start();
     }
 
 }
