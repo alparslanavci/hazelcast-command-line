@@ -87,7 +87,7 @@ jobs:
           sudo cp ${{ env.ASSET_PATH }} /root/rpmbuild/SOURCES/
           sed -i 's+%define hzversion.*$+%define hzversion ${{ env.HZ_VERSION }}+g' packages/rpm/hazelcast.spec
           sed -i 's+Version:.*$+Version:    ${{ env.RELEASE }}+g' packages/rpm/hazelcast.spec
-          cp packages/rpm/.rpmmacros /root/
+          sudo cp packages/rpm/.rpmmacros /root/
           gpg --list-keys
           sudo printf "${{ secrets.DEVOPS_PRIVATE_KEY }}" | base64 --decode > /root/.gnupg/private.key
           gpg --batch --import /root/.gnupg/private.key
