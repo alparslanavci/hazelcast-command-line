@@ -92,7 +92,7 @@ jobs:
           printf "${{ secrets.DEVOPS_PRIVATE_KEY }}" | base64 --decode > private.key
           sudo cp private.key /root/.gnupg/
           sudo gpg --batch --import /root/.gnupg/private.key
-          gpg --export -a 'Hazelcast' > RPM-GPG-KEY-Hazelcast
+          sudo gpg --export -a 'Hazelcast' > RPM-GPG-KEY-Hazelcast
           sudo rpm --import RPM-GPG-KEY-Hazelcast
           sudo rpmbuild --define "_topdir /root/rpmbuild/" -bb packages/rpm/hazelcast.spec
           sudo rpm --addsign /root/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm
