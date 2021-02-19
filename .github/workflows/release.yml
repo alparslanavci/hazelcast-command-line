@@ -95,7 +95,7 @@ jobs:
           sudo gpg --export -a 'Hazelcast' > RPM-GPG-KEY-Hazelcast
           sudo rpm --import RPM-GPG-KEY-Hazelcast
           sudo rpmbuild --define "_topdir /root/rpmbuild/" -bb packages/rpm/hazelcast.spec
-          sudo rpm --addsign /root/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm
+          sudo rpm --define "_gpg_name Hazelcast" --addsign /root/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm
           DEB_SHA256SUM=$(sha256sum /root/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm | cut -d ' ' -f 1)
           DEB_SHA1SUM=$(sha1sum /root/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm | cut -d ' ' -f 1)
           DEB_MD5SUM=$(md5sum /root/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm | cut -d ' ' -f 1)
