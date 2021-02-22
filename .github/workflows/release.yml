@@ -102,7 +102,7 @@ jobs:
           DEB_SHA1SUM=$(sha1sum /home/runner/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm | cut -d ' ' -f 1)
           DEB_MD5SUM=$(md5sum /home/runner/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm | cut -d ' ' -f 1)
           curl -H "Authorization: Bearer ${{ secrets.ARTIFACTORY_SECRET }}" -H "X-Checksum-Deploy: false" -H "X-Checksum-Sha256: $DEB_SHA256SUM" \
-                      -H "X-Checksum-Sha1: $DEB_SHA1SUM" -H "X-Checksum-MD5: $DEB_MD5SUM" -T"~/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm" \
+                      -H "X-Checksum-Sha1: $DEB_SHA1SUM" -H "X-Checksum-MD5: $DEB_MD5SUM" -T"/home/runner/rpmbuild/RPMS/noarch/hazelcast-${{ env.RELEASE }}-1.noarch.rpm" \
                       -X PUT "https://repository.hazelcast.com/rpm-test-local/hazelcast-${{ env.RELEASE }}-1.noarch.rpm"
 
 #      - name: Checkout homebrew-hz repo
